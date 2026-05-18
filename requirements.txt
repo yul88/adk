@@ -1,0 +1,11 @@
+beautifulsoup4
+fastapi>=0.115.0
+google-adk>=1.28.1
+google-cloud-firestore>=2.14.0
+google-genai>=0.2.0
+pydantic>=2.9.0
+pymongo>=4.9.0
+python-dotenv
+python-multipart
+requests
+uvicorn>=0.32.0
