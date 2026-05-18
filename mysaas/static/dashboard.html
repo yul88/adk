@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mySaaS - Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="css/style.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+
+<body class="dashboard-body">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-dark glass-nav fixed-top px-3">
+    <a class="navbar-brand gradient-text fw-bold" href="#">mySaaS</a>
+    <div class="d-flex align-items-center gap-3">
+      <span id="currentUser" class="text-light"></span>
+      <button class="btn btn-sm btn-outline-light rounded-pill" onclick="signout()">Sign Out</button>
+    </div>
+  </nav>
+
+  <div class="container-fluid h-100 pt-5">
+    <div class="row h-100 g-0 pt-3">
+
+      <!-- Mobile Tabs -->
+      <div class="d-md-none fixed-bottom glass-nav d-flex justify-content-around py-2 z-3">
+        <button class="btn btn-link text-light text-decoration-none active" id="tab-chat"
+          onclick="setMobileView('chat')">
+          <i class="bi bi-chat-dots fs-4"></i><br><small>Chat</small>
+        </button>
+        <button class="btn btn-link text-light text-decoration-none" id="tab-artifacts"
+          onclick="setMobileView('artifacts')">
+          <i class="bi bi-files fs-4"></i><br><small>Data</small>
+        </button>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="col-md-1 glass-sidebar d-none d-md-flex flex-column align-items-center py-4 gap-4">
+        <button class="btn btn-icon active-agent" id="btn-checkmate" onclick="switchAgent('checkmate')"
+          title="Checkmate">
+          <i class="bi bi-list-check fs-4"></i>
+        </button>
+        <button class="btn btn-icon" id="btn-stash" onclick="switchAgent('stash')" title="Stash">
+          <i class="bi bi-archive fs-4"></i>
+        </button>
+      </div>
+
+      <!-- Chat Area (Middle) -->
+      <div
+        class="col-12 col-md-5 d-flex flex-column h-100 border-end border-secondary border-opacity-25 bg-dark-translucent"
+        id="chatColumn">
+        <div
+          class="p-3 border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+          <h5 class="m-0 text-light" id="chatTitle">Select an Agent</h5>
+          <!-- Mobile Agent Switcher -->
+          <div class="d-md-none dropdown">
+            <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">Switch
+              Agent</button>
+            <ul class="dropdown-menu dropdown-menu-dark">
+              <li><a class="dropdown-item" href="#" onclick="switchAgent('checkmate')">Checkmate</a></li>
+              <li><a class="dropdown-item" href="#" onclick="switchAgent('stash')">Stash</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div id="chatHistory" class="flex-grow-1 overflow-auto p-3 chat-container">
+          <!-- Chat bubbles go here -->
+          <div class="text-center text-muted mt-5" id="welcomeMessage">
+            <h3>Welcome Back</h3>
+            <p>Select an agent to start working.</p>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="px-3 pb-2 d-flex gap-2">
+          <button class="btn btn-sm btn-outline-info rounded-pill glass-btn" onclick="quickAction('new_checklist')"
+            title="New Checklist" id="btn-qa-checklist">
+            <i class="bi bi-plus-circle"></i> New List
+          </button>
+          <button class="btn btn-sm btn-outline-warning rounded-pill glass-btn" onclick="quickAction('stash_link')"
+            title="Stash Link" id="btn-qa-stash">
+            <i class="bi bi-link-45deg"></i> Stash Link
+          </button>
+        </div>
+
+        <div class="p-3 border-top border-secondary border-opacity-25">
+          <div class="input-group">
+            <input type="text" id="chatInput" class="form-control glass-input" placeholder="Type a message..." disabled>
+            <button class="btn btn-primary glass-btn" onclick="sendMessage()" id="sendBtn" disabled>
+              <i class="bi bi-send"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Artifacts Area (Right) -->
+      <div class="col-12 col-md-6 h-100 overflow-auto p-4 bg-darker d-none d-md-block" id="artifactsColumn">
+        <!-- Checkmate Artifacts -->
+        <div id="checkmatePanel" class="d-none">
+          <h4 class="mb-4 text-light"><i class="bi bi-check2-square me-2"></i>My Checklists</h4>
+          <div class="accordion glass-accordion" id="checklistAccordion">
+            <!-- Checklists injected here -->
+          </div>
+        </div>
+
+        <!-- Stash Artifacts -->
+        <div id="stashPanel" class="d-none">
+          <h4 class="mb-4 text-light"><i class="bi bi-link-45deg me-2"></i>Stashed Links</h4>
+          <div class="input-group mb-3">
+            <span class="input-group-text glass-input border-end-0"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control glass-input border-start-0" placeholder="Search links..."
+              onkeyup="filterLinks(this.value)">
+          </div>
+          <div class="table-responsive glass-card p-0">
+            <table class="table table-dark table-hover mb-0 align-middle">
+              <thead>
+                <tr>
+                  <th>Link</th>
+                  <th>Tags</th>
+                </tr>
+              </thead>
+              <tbody id="linksTableBody">
+                <!-- Links injected here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Welcome Widget -->
+        <div id="welcomePanel">
+          <h4 class="text-light">Recent Activity</h4>
+          <p class="text-muted">Start chatting to see your data.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Input Modal -->
+  <div class="modal fade" id="inputModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content glass-modal">
+        <div class="modal-header">
+          <h5 class="modal-title" id="inputModalLabel">Quick Action</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="inputModalPrompt">Enter value:</p>
+          <input type="text" id="inputModalValue" class="form-control glass-input"
+            onkeypress="handleModalKeypress(event)">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary glass-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary glass-btn" onclick="submitModal()">Submit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simple Confirmation Modal -->
+  <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content glass-modal text-center">
+        <div class="modal-body p-4">
+          <i class="bi bi-exclamation-circle text-warning display-4 mb-3"></i>
+          <h5 class="modal-title mb-3" id="confirmModalLabel">Are you sure?</h5>
+          <p id="confirmModalMessage" class="text-muted mb-4">You are about to delete this item.</p>
+          <div class="d-flex justify-content-center gap-2">
+            <button type="button" class="btn btn-secondary glass-btn px-4" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger glass-btn px-4" id="confirmModalBtn">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Templates -->
+  <template id="checklistTemplate">
+    <div class="accordion-item glass-accordion-item mb-3">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed glass-accordion-btn" type="button" data-bs-toggle="collapse">
+          <span class="checklist-title fw-bold">Title</span>
+          <span class="badge bg-secondary ms-auto me-3 item-count">0 items</span>
+        </button>
+      </h2>
+      <div class="accordion-collapse collapse">
+        <div class="accordion-body">
+          <div class="checklist-items d-flex flex-column gap-2"></div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>

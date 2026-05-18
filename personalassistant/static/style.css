@@ -1,0 +1,77 @@
+:root {
+    --primary-gradient: linear-gradient(to right, #6366f1, #ec4899);
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Custom Utilities */
+.bg-gradient-primary-to-secondary {
+    background: var(--primary-gradient);
+}
+
+.bg-clip-text {
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+.text-transparent {
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+/* Chat Bubbles */
+.message-user {
+    flex-direction: row-reverse;
+}
+
+.message-user .card {
+    background: var(--primary-gradient) !important;
+    color: white;
+}
+
+.message-user .card .prose {
+    color: white;
+}
+
+/* Markdown Styles in Chat */
+.prose pre {
+    background-color: #0d1117;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+    color: #c9d1d9;
+}
+
+.prose code {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.875em;
+    color: #e6e6e6;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.2rem;
+}
+
+.prose p:last-child {
+    margin-bottom: 0;
+}
+
+/* Scrollbar customization for webkit */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--bs-secondary-bg);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-secondary);
+}

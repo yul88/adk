@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en" class="h-100">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stash Agent</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        #chat-container {
+            overflow-y: auto;
+        }
+
+        .message {
+            max-width: 80%;
+            border-radius: 1rem;
+        }
+
+        .user-msg {
+            background-color: #0d6efd;
+            color: white;
+            border-bottom-right-radius: 0;
+        }
+
+        .agent-msg {
+            background-color: #e9ecef;
+            color: #212529;
+            border-bottom-left-radius: 0;
+        }
+
+        /* Fix for markdown content in messages */
+        .agent-msg p:last-child {
+            margin-bottom: 0;
+        }
+
+        .agent-msg pre {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+
+        /* Custom scrollbar for better look */
+        #chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #chat-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #chat-container::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        /* Links in tables */
+        .table-link {
+            text-decoration: none;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body class="d-flex flex-column h-100 overflow-hidden">
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark flex-shrink-0">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-box-seam me-2"></i>Stash
+            </a>
+            <div class="d-flex align-items-center">
+                <span id="user-info" class="text-light me-3 small">Guest</span>
+                <button id="logout-btn" class="btn btn-sm btn-outline-danger d-none">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Alert Container -->
+    <div id="alert-container" class="position-fixed top-0 start-50 translate-middle-x p-3"
+        style="z-index: 2000; width: 90%; max-width: 500px; margin-top: 60px;"></div>
+
+    <!-- Main Content -->
+    <main class="flex-grow-1 d-flex flex-column overflow-hidden">
+        <div class="container py-3 h-100 d-flex flex-column">
+            <div id="chat-container" class="flex-grow-1 d-flex flex-column gap-3 mb-3 p-3 bg-white rounded shadow-sm">
+                <div class="message agent-msg p-3 align-self-start">
+                    Hello! I am Stash. Please sign in to start saving links.
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Input Area -->
+    <footer class="footer mt-auto py-3 bg-light border-top flex-shrink-0">
+        <div class="container">
+            <div class="input-group">
+                <input type="text" id="user-input" class="form-control" placeholder="Type a message..." disabled>
+                <button id="send-btn" class="btn btn-primary" type="button" disabled>
+                    <i class="bi bi-send-fill"></i> Send
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Auth Modal -->
+    <div class="modal fade" id="authModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="authModalLabel">Sign In</h5>
+                </div>
+                <div class="modal-body">
+                    <!-- Login Form -->
+                    <form id="login-form">
+                        <div class="mb-3">
+                            <label for="login-user" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="login-user" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="login-pass" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="login-pass" required>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary" onclick="handleAuth('signin')">Sign
+                                In</button>
+                        </div>
+                        <div class="text-center mt-3">
+                            <span class="text-primary" style="cursor: pointer;" onclick="toggleAuthMode()">Need an
+                                account? Sign Up</span>
+                        </div>
+                    </form>
+
+                    <!-- Signup Form -->
+                    <form id="signup-form" class="d-none">
+                        <div class="mb-3">
+                            <label for="signup-user" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="signup-user" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="signup-pass" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="signup-pass" required>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-success" onclick="handleAuth('signup')">Sign
+                                Up</button>
+                        </div>
+                        <div class="text-center mt-3">
+                            <span class="text-primary" style="cursor: pointer;" onclick="toggleAuthMode()">Already have
+                                an account? Sign In</span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Boundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const userInfo = document.getElementById('user-info');
+        const logoutBtn = document.getElementById('logout-btn');
+        let authModalUser; // Bootstrap Modal instance
+
+        document.addEventListener('DOMContentLoaded', () => {
+            authModalUser = new bootstrap.Modal(document.getElementById('authModal'));
+            // Initial check
+            updateUserInfo();
+        });
+
+        function showAlert(message, type = 'danger') {
+            const alertContainer = document.getElementById('alert-container');
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = [
+                `<div class="alert alert-${type} alert-dismissible fade show shadow" role="alert">`,
+                `   <div>${message}</div>`,
+                '   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>',
+                '</div>'
+            ].join('');
+            alertContainer.append(wrapper);
+
+            // Auto dismiss after 5 seconds
+            setTimeout(() => {
+                const alert = bootstrap.Alert.getOrCreateInstance(wrapper.firstElementChild);
+                alert.close();
+            }, 5000);
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showAlert("Link copied!", "success");
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                showAlert("Failed to copy link", "danger");
+            });
+        }
+
+        function addMessage(text, isUser) {
+            const div = document.createElement('div');
+            div.className = `message ${isUser ? 'user-msg align-self-end' : 'agent-msg align-self-start'} p-3 shadow-sm`;
+
+            let content = isUser ? text : marked.parse(text);
+
+            div.innerHTML = content;
+
+            // Style tables generated by markdown
+            if (!isUser) {
+                div.querySelectorAll('table').forEach(table => {
+                    table.className = 'table table-hover table-bordered table-sm mt-2 mb-2 bg-white';
+                    table.style.tableLayout = 'fixed';
+                    table.style.width = '100%';
+                    table.querySelector('thead').className = 'table-light';
+
+                    // Set column widths
+                    const ths = table.querySelectorAll('th');
+                    if (ths.length >= 3) {
+                        ths[0].style.width = '20%'; // Tag
+                        ths[1].style.width = '65%'; // Summary
+                        ths[2].style.width = '15%'; // Link
+                    }
+
+                    // Transform Link column to buttons
+                    table.querySelectorAll('tbody tr').forEach(row => {
+                        const cells = row.querySelectorAll('td');
+                        if (cells.length >= 3) {
+                            const linkCell = cells[2];
+                            const link = linkCell.querySelector('a');
+                            if (link) {
+                                const url = link.href;
+                                linkCell.innerHTML = `
+                                    <div class="d-flex gap-2 justify-content-center align-items-center">
+                                        <a href="${url}" target="_blank" class="btn btn-sm btn-outline-primary p-1" title="Open" style="line-height: 1;">
+                                            <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                        <button onclick="copyToClipboard('${url}')" class="btn btn-sm btn-outline-secondary p-1" title="Copy" style="line-height: 1;">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
+                                `;
+                            }
+                        }
+                    });
+                });
+            }
+
+            chatContainer.appendChild(div);
+            // Scroll using simple modification
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function toggleAuthMode() {
+            document.getElementById('login-form').classList.toggle('d-none');
+            document.getElementById('signup-form').classList.toggle('d-none');
+            const title = document.getElementById('authModalLabel');
+            title.textContent = document.getElementById('login-form').classList.contains('d-none') ? 'Sign Up' : 'Sign In';
+        }
+
+        async function handleAuth(action) {
+            const type = action === 'signin' ? 'login' : 'signup';
+            const user = document.getElementById(`${type}-user`).value;
+            const pass = document.getElementById(`${type}-pass`).value;
+
+            if (!user || !pass) return showAlert("Please fill in all fields", "warning");
+
+            try {
+                const res = await fetch(`/api/${action}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    authModalUser.hide();
+                    userInput.disabled = false;
+                    sendBtn.disabled = false;
+                    logoutBtn.classList.remove('d-none');
+                    userInfo.textContent = `User: ${user}`;
+                    showAlert(`Successfully ${action === 'signin' ? 'signed in' : 'signed up'}!`, "success");
+
+                    // Clear forms
+                    document.getElementById('login-user').value = '';
+                    document.getElementById('login-pass').value = '';
+                    document.getElementById('signup-user').value = '';
+                    document.getElementById('signup-pass').value = '';
+
+                } else {
+                    showAlert(data.message, "danger");
+                }
+            } catch (e) {
+                showAlert("Auth failed: " + e.message, "danger");
+            }
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await fetch('/api/signout', { method: 'POST' });
+            window.location.reload();
+        });
+
+        async function updateUserInfo() {
+            try {
+                const res = await fetch('/api/current_user');
+                const data = await res.json();
+                if (data.username) {
+                    // Already logged in
+                    authModalUser.hide();
+                    userInfo.textContent = `User: ${data.username}`;
+                    logoutBtn.classList.remove('d-none');
+                    userInput.disabled = false;
+                    sendBtn.disabled = false;
+                } else {
+                    // Not logged in
+                    authModalUser.show();
+                    logoutBtn.classList.add('d-none');
+                    userInput.disabled = true;
+                    sendBtn.disabled = true;
+                }
+            } catch (e) {
+                console.error("Failed to fetch user info", e);
+                // Fallback safe mode
+                authModalUser.show();
+            }
+        }
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            addMessage(text, true);
+            userInput.value = '';
+
+            try {
+                const res = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+
+                const data = await res.json();
+                addMessage(data.response, false);
+                
+                // Check if user state changed (e.g. implicit signout via chat)
+                if (data.user === null && !authModalUser._element.classList.contains('show')) {
+                    // User was logged in but is now null -> reload to show login
+                    window.location.reload();
+                }
+            } catch (e) {
+                addMessage("Error: Could not connect to server.", false);
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+
+</html>
